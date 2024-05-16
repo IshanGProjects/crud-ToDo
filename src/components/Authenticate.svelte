@@ -26,6 +26,7 @@
     } catch (err) {
       console.log("There was an authentication error", err);
       error = true;
+      authenticating = false;
     }
   }
 

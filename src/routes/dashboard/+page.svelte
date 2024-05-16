@@ -1,5 +1,8 @@
 <script>
+  import { db } from "../../lib/firebase/firebase";
   import { authHandlers, authStore } from "../../store/store";
+  import { getDoc, doc, setDoc } from "firebase/firestore";
+  import TodoItem from "../../components/TodoItem.svelte";
 
   let todoList = [];
   let currTodo = "";
@@ -19,18 +22,35 @@
   }
 
   function editTodo(index) {
-    let newToDoList = todoList.filter((val, i) => {
-      return i !== index;
+    let newTodoList = [...todoList].filter((val, i) => {
+      console.log(i, index, i !== index);
+      return i != index;
     });
     currTodo = todoList[index];
-    todoList = newToDoList;
+    todoList = newTodoList;
   }
 
   function removeTodo(index) {
-    let newToDoList = todoList.filter((val, i) => {
-      return i !== index;
+    let newTodoList = [...todoList].filter((val, i) => {
+      console.log(i, index, i !== index);
+      return i != index;
     });
-    todoList = newToDoList;
+    todoList = newTodoList;
+  }
+
+  async function saveTodos() {
+    try {
+      const userRef = doc(db, "users", $authStore.user.uid);
+      await setDoc(
+        userRef,
+        {
+          todos: todoList,
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.log("There was an error saving your information");
+    }
   }
 </script>
 
@@ -39,15 +59,14 @@
     <div class="headerContainer">
       <h1>Todo List</h1>
       <div class="headerBtns">
-        <button>
-          <i class="fa-regular fa-floppy-disk"></i>
-          <p>Save</p>
-        </button>
-
+        <button on:click={saveTodos}>
+          <i class="fa-regular fa-floppy-disk" />
+          <p>Save</p></button
+        >
         <button on:click={authHandlers.logout}>
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <p>Logout</p>
-        </button>
+          <i class="fa-solid fa-right-from-bracket" />
+          <p>Logout</p></button
+        >
       </div>
     </div>
     <main>
@@ -55,27 +74,11 @@
         <p>You have nothing to do!</p>
       {/if}
       {#each todoList as todo, index}
-        <div class="todo">
-          <p>
-            {index + 1}. {todo}
-          </p>
-          <div class="actions">
-            <i
-              on:click={() => editTodo(index)}
-              class="fa-regular fa-pen-to-square"
-              on:keydown={() => {}}
-            ></i>
-            <i
-              on:click={() => removeTodo(index)}
-              class="fa-regular fa-trash-can"
-              on:keydown={() => {}}
-            ></i>
-          </div>
-        </div>
+        <TodoItem {todo} {index} {removeTodo} {editTodo} />
       {/each}
     </main>
     <div class={"enterTodo " + (error ? "errorBorder" : "")}>
-      <input bind:value={currTodo} type="text" placeholder="Enter Todo" />
+      <input bind:value={currTodo} type="text" placeholder="Enter todo" />
       <button on:click={addTodo}>ADD</button>
     </div>
   </div>
@@ -114,7 +117,7 @@
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     cursor: pointer;
   }
 
@@ -131,29 +134,6 @@
     flex-direction: column;
     gap: 8px;
     flex: 1;
-  }
-
-  .todo {
-    border-left: 1px solid cyan;
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .actions {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-size: 1.3rem;
-  }
-
-  .actions i {
-    cursor: pointer;
-  }
-
-  .actions i:hover {
-    color: coral;
   }
 
   .enterTodo {

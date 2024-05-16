@@ -1,13 +1,13 @@
 <script>
   import { onMount } from "svelte";
   import { auth, db } from "../lib/firebase/firebase";
-  import { doc, getDoc, setDoc } from "firebase/firestore";
+  import { getDoc, doc, setDoc } from "firebase/firestore";
   import { authStore } from "../store/store";
 
-  const nonAuthRoutes = ["/"];
+  const nonAuthRoutes = ["/", "product"];
 
   onMount(() => {
-    console.log("Mounting...");
+    console.log("Mounting");
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       const currentPath = window.location.pathname;
 
@@ -16,7 +16,6 @@
         return;
       }
 
-      //We do have auth at this point
       if (user && currentPath === "/") {
         window.location.href = "/dashboard";
         return;
@@ -26,30 +25,33 @@
         return;
       }
 
-      let dataToStore;
-      //Now we have user existence fetch data
+      let dataToSetToStore;
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const userRef = doc(db, "user", user.uid);
-        dataToStore = {
+      if (!docSnap.exists()) {
+        console.log("Creating User");
+        const userRef = doc(db, "users", user.uid);
+        dataToSetToStore = {
           email: user.email,
           todos: [],
         };
-        await setDoc(userRef, dataToStore, { merge: true });
+        await setDoc(userRef, dataToSetToStore, { merge: true });
       } else {
+        console.log("Fetching User");
         const userData = docSnap.data();
-        dataToStore = userData;
+        dataToSetToStore = userData;
       }
+
       authStore.update((curr) => {
         return {
           ...curr,
           user,
-          userData: dataToStore,
+          data: dataToSetToStore,
           loading: false,
         };
       });
     });
+    return unsubscribe;
   });
 </script>
 
@@ -59,7 +61,7 @@
 
 <style>
   .mainContainer {
-    height: 100vh;
+    min-height: 100vh;
     background: linear-gradient(to right, #000428, #000046);
     color: white;
     position: relative;
